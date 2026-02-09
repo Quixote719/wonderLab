@@ -1,2 +1,23 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+/* index.css（v4 写法，无 @tailwind 指令） */
+/* 直接导入 Tailwind 核心样式（v4 推荐写法） */
 @import "tailwindcss";
 @import "tw-animate-css";
+
+/* @layer utilities 直接生效，无需 @tailwind utilities */
+@layer utilities {
+  .text-shadow-md {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+  .bg-size-200 {
+    background-size: 200% 200%;
+  }
+}
+
+@import "tw-animate-css";
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', 'Montserrat', sans-serif;
+}
