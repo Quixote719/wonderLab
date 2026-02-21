@@ -5,9 +5,15 @@ import lionImg from '@/assets/lion.jpg';
 import styles from './clockPage.module.css';
 
 // 常量抽离
-const MOUSE_POS_BUFFER_RATIO = 1/3;
+const MOUSE_POS_BUFFER_RATIO = 1/5;
 const MOUSE_POS_MIN_BUFFER = 100;
 const DATE_UPDATE_INTERVAL = 5000;
+
+// 优化1：定义类型，分别管理两张图的尺寸
+interface BgSizes {
+  church: string;
+  lion: string;
+}
 
 const ClockPage = () => {
   // 初始化日期
@@ -20,19 +26,45 @@ const ClockPage = () => {
     })
   );
   const [dateTimestamp, setDateTimestamp] = useState(initialDate.getTime());
-  const [mousePos, setMousePos] = useState('left');
-  // 背景尺寸（不再用cover兜底，精准控制）
-  const [bgSize, setBgSize] = useState('');
+  const [mousePos, setMousePos] = useState<'left' | 'right'>('left');
+  
+  // 优化2：使用对象分别存储两张图的尺寸，不再共用
+  const [bgSizes, setBgSizes] = useState<BgSizes>({
+    church: 'cover', // 初始兜底
+    lion: 'cover'
+  });
 
+  // Refs
   const mousePosRef = useRef(mousePos);
   const windowMiddleXRef = useRef(0);
-  const churchImgRef = useRef<HTMLImageElement | null>(null);
-  const lionImgRef = useRef<HTMLImageElement | null>(null);
+  // 优化3：Ref 只存原始图片对象，不参与渲染逻辑
+  const imagesMetaRef = useRef<{
+    church?: HTMLImageElement;
+    lion?: HTMLImageElement;
+  }>({});
 
-  // 同步mousePos到ref
+  // 同步 mousePos 到 ref (用于闭包陷阱)
   useEffect(() => {
     mousePosRef.current = mousePos;
   }, [mousePos]);
+
+  // 优化4：抽离纯计算逻辑，不依赖 state
+  const computeSize = (img: HTMLImageElement): string => {
+    const imgRatio = img.naturalWidth / img.naturalHeight;
+    const windowRatio = window.innerWidth / window.innerHeight;
+    return imgRatio > windowRatio ? 'auto 100%' : '100% auto';
+  };
+
+  // 优化5：预加载并计算单张图片尺寸的通用函数
+  const loadAndComputeImage = useCallback((src: string, key: keyof BgSizes) => {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => {
+      imagesMetaRef.current[key] = img;
+      const size = computeSize(img);
+      setBgSizes(prev => ({ ...prev, [key]: size }));
+    };
+  }, []);
 
   // 日期更新函数
   const genDateStr = useCallback(() => {
@@ -47,60 +79,40 @@ const ClockPage = () => {
     setDateTimestamp(curDate.getTime());
   }, []);
 
-  // 核心：按你的比例规则计算背景尺寸
-  const calculateBgSize = useCallback((imgSrc: string) => {
-    const img = imgSrc === churchImg ? churchImgRef.current : lionImgRef.current;
-    if (!img) {
-      const newImg = new Image();
-      newImg.src = imgSrc;
-      newImg.onload = () => {
-        // 缓存图片对象
-        if (imgSrc === churchImg) {
-          churchImgRef.current = newImg;
-        } else {
-          lionImgRef.current = newImg;
-        }
-        computeSize(newImg);
-      };
-    } else {
-      computeSize(img);
-    }
-
-    // 关键：按你的规则计算size
-    function computeSize(img: HTMLImageElement) {
-      // 1. 图片原始宽高比（宽/高）
-      const imgRatio = img.naturalWidth / img.naturalHeight;
-      // 2. 窗口宽高比（宽/高）
-      const windowRatio = window.innerWidth / window.innerHeight;
-
-      // 你的规则：
-      // 图片宽高比 > 窗口宽高比 → 竖直100%（auto 100%），水平裁剪
-      // 反之 → 水平100%（100% auto），竖直裁剪
-      if (imgRatio > windowRatio) {
-        setBgSize('auto 100%');
-      } else {
-        setBgSize('100% auto');
-      }
-    }
-  }, []);
-
+  // --- 逻辑拆分：1. 初始化与全局样式 ---
   useEffect(() => {
-    // 彻底重置html/body样式，消除任何留白
     const html = document.documentElement;
+    const body = document.body;
+
+    // 保存原始样式以便恢复
+    const originalHtmlStyle = html.style.cssText;
+    const originalBodyStyle = body.style.cssText;
+
     html.style.margin = '0';
     html.style.padding = '0';
     html.style.boxSizing = 'border-box';
     html.style.overflow = 'hidden';
-
-    document.body.style.margin = '0';
-    document.body.style.padding = '0';
-    document.body.style.boxSizing = 'border-box';
-    document.body.style.overflow = 'hidden';
+    body.style.margin = '0';
+    body.style.padding = '0';
+    body.style.boxSizing = 'border-box';
+    body.style.overflow = 'hidden';
 
     windowMiddleXRef.current = window.innerWidth / 2;
 
-    // mousemove节流
+    // 初始化：同时加载两张图，不再只加载当前图
+    loadAndComputeImage(churchImg, 'church');
+    loadAndComputeImage(lionImg, 'lion');
+
+    return () => {
+      html.style.cssText = originalHtmlStyle;
+      body.style.cssText = originalBodyStyle;
+    };
+  }, [loadAndComputeImage]); // 依赖极稳定，只挂载时执行一次
+
+  // --- 逻辑拆分：2. 鼠标移动监听 (不依赖 mousePos，避免反复绑定) ---
+  useEffect(() => {
     let moveTimer: number | null = null;
+
     const handleMouseMove = (event: MouseEvent) => {
       if (moveTimer) clearTimeout(moveTimer);
       moveTimer = window.setTimeout(() => {
@@ -110,48 +122,54 @@ const ClockPage = () => {
         const leftThreshold = middleX - buffer;
         const rightThreshold = middleX + buffer;
 
-        let positionDesc = 'left';
+        // 直接在回调里判断，减少对外部 state 的依赖
+        let newPos: 'left' | 'right' = mousePosRef.current;
         if (mouseClientX < leftThreshold) {
-          positionDesc = 'left';
+          newPos = 'left';
         } else if (mouseClientX > rightThreshold) {
-          positionDesc = 'right';
-        } else {
-          positionDesc = 'middle';
+          newPos = 'right';
         }
 
-        if (mousePosRef.current !== positionDesc && positionDesc !== 'middle') {
-          setMousePos(positionDesc);
+        if (mousePosRef.current !== newPos) {
+          setMousePos(newPos);
         }
       }, 16);
     };
 
-    // 窗口缩放时重新计算背景尺寸（保证适配）
-    const handleResize = () => {
-      windowMiddleXRef.current = window.innerWidth / 2;
-      calculateBgSize(mousePos === 'left' ? churchImg : lionImg);
-    };
-
-    // 绑定事件
     document.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('resize', handleResize);
-
-    // 定时器
-    const timer = setInterval(genDateStr, DATE_UPDATE_INTERVAL);
-
-    // 初始化背景尺寸
-    calculateBgSize(churchImg);
-
-    // 清理副作用
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('resize', handleResize);
-      clearInterval(timer);
       if (moveTimer) clearTimeout(moveTimer);
-      // 恢复样式（可选）
-      html.style = '';
-      document.body.style = '';
     };
-  }, [genDateStr, calculateBgSize, mousePos]);
+  }, []); // 空依赖，只挂载一次
+
+  // --- 逻辑拆分：3. 窗口 resize 监听 ---
+  useEffect(() => {
+    const handleResize = () => {
+      windowMiddleXRef.current = window.innerWidth / 2;
+      
+      // 优化6：窗口变化时，重新计算两张图的尺寸（如果已加载）
+      const newSizes: Partial<BgSizes> = {};
+      if (imagesMetaRef.current.church) {
+        newSizes.church = computeSize(imagesMetaRef.current.church);
+      }
+      if (imagesMetaRef.current.lion) {
+        newSizes.lion = computeSize(imagesMetaRef.current.lion);
+      }
+      if (Object.keys(newSizes).length > 0) {
+        setBgSizes(prev => ({ ...prev, ...newSizes }));
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // --- 逻辑拆分：4. 日期定时器 ---
+  useEffect(() => {
+    const timer = setInterval(genDateStr, DATE_UPDATE_INTERVAL);
+    return () => clearInterval(timer);
+  }, [genDateStr]);
 
   // 农历日期计算
   const lunarDateStr = useMemo(() => {
@@ -167,41 +185,56 @@ const ClockPage = () => {
     return lunar.toString();
   }, [dateTimestamp]);
 
-  // 切换图片时重新计算尺寸
-  useEffect(() => {
-    calculateBgSize(mousePos === 'left' ? churchImg : lionImg);
-  }, [mousePos, calculateBgSize]);
+  // 优化7：移除了切换时才计算尺寸的 useEffect，因为我们已经预加载好了
 
   return (
-    // 容器强制占满视口，无任何留白
     <div 
       className={styles.clockPage} 
       style={{
-        // 背景图片
-        backgroundImage: `url(${mousePos === 'left' ? churchImg : lionImg})`,
-        // 保留top center定位
-        backgroundPosition: 'top center',
-        // 不重复
-        backgroundRepeat: 'no-repeat',
-        // 按规则计算的尺寸（不拉伸）
-        backgroundSize: bgSize,
-        // 强制占满视口（核心：无白边）
         position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
-        bottom: 0
+        bottom: 0,
+        overflow: 'hidden'
       }}
     >
-      <div className="grid place-items-center h-full w-full">
+      {/* 背景层 1：Church */}
+      <div
+        className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+          mousePos === 'left' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        style={{
+          backgroundImage: `url(${churchImg})`,
+          backgroundPosition: 'top center',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: bgSizes.church, // 使用独立的尺寸
+        }}
+      />
+
+      {/* 背景层 2：Lion */}
+      <div
+        className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+          mousePos === 'right' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        style={{
+          backgroundImage: `url(${lionImg})`,
+          backgroundPosition: 'top center',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: bgSizes.lion, // 使用独立的尺寸
+        }}
+      />
+
+      {/* 内容层 */}
+      <div className="grid place-items-center h-full w-full relative z-10">
         <div 
           className="px-8 py-4 rounded-3xl
           backdrop-blur-xl bg-white/10
           shadow-xs shadow-black/2
           sm:px-12 sm:py-6"
         >
-          <div className="text-4xl sm:text-5xl md:text-6xl font-sans text-black">{dateStr}</div>
-          <div className="text-4xl sm:text-5xl md:text-6xl font-sans text-black">{lunarDateStr}</div>
+          {mousePos === 'left' && <div className="text-4xl sm:text-5xl md:text-6xl font-sans text-black">{dateStr}</div>}
+          {mousePos === 'right' && <div className="text-4xl sm:text-5xl md:text-6xl font-sans text-black">{lunarDateStr}</div>}
         </div>
       </div>
     </div>
