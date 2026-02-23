@@ -182,7 +182,15 @@ const ClockPage = () => {
 
     const solar = Solar.fromYmd(year, month, day);
     const lunar = solar.getLunar();
-    return lunar.toString();
+    
+    // 获取天干地支年
+    const ganZhiYear = lunar.getYearInGanZhi();
+    // 获取农历月份
+    const lunarMonth = lunar.getMonthInChinese();
+    // 获取农历日期
+    const lunarDay = lunar.getDayInChinese();
+    
+    return `${ganZhiYear}年${lunarMonth}月${lunarDay}`;
   }, [dateTimestamp]);
 
   // 优化7：移除了切换时才计算尺寸的 useEffect，因为我们已经预加载好了
@@ -234,7 +242,7 @@ const ClockPage = () => {
           sm:px-12 sm:py-6"
         >
           {mousePos === 'left' && <div className="text-4xl sm:text-5xl md:text-6xl font-sans text-black">{dateStr}</div>}
-          {mousePos === 'right' && <div className="text-4xl sm:text-5xl md:text-6xl font-sans text-black">{lunarDateStr}</div>}
+          {mousePos === 'right' && <div className="text-4xl sm:text-5xl md:text-6xl text-black [writing-mode:vertical-rl]" style={{fontFamily: "'华文行楷', '楷体', 'serif'"}}>{lunarDateStr}</div>}
         </div>
       </div>
     </div>

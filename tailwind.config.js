@@ -1,9 +1,16 @@
 // tailwind.config.js（v4 极简配置）
+/** @type {import('tailwindcss').Config} */
 export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
         sans: ['Montserrat', 'Inter', 'PingFang SC', 'Microsoft YaHei', 'sans-serif'],
+        'xingkai': ['Ma Shan Zheng', 'STXingkai', '华文行楷', 'KaiTi', '楷体', 'serif'],
       },
       animation: {
         "gradient-shift": "gradientShift 15s ease infinite",
