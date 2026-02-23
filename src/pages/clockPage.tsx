@@ -1,11 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Solar, Lunar } from 'lunar-javascript';
+import { Solar } from 'lunar-javascript';
 import churchImg from '@/assets/church.jpg';
 import lionImg from '@/assets/lion.jpg';
-import styles from './clockPage.module.css';
 
 // 常量抽离
-const MOUSE_POS_BUFFER_RATIO = 1/5;
+const MOUSE_POS_BUFFER_RATIO = 1 / 5;
 const MOUSE_POS_MIN_BUFFER = 100;
 const DATE_UPDATE_INTERVAL = 5000;
 
@@ -19,19 +18,19 @@ const ClockPage = () => {
   // 初始化日期
   const initialDate = new Date();
   const [dateStr, setDateStr] = useState(
-    initialDate.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    initialDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     })
   );
   const [dateTimestamp, setDateTimestamp] = useState(initialDate.getTime());
   const [mousePos, setMousePos] = useState<'left' | 'right'>('left');
-  
+
   // 优化2：使用对象分别存储两张图的尺寸，不再共用
   const [bgSizes, setBgSizes] = useState<BgSizes>({
     church: 'cover', // 初始兜底
-    lion: 'cover'
+    lion: 'cover',
   });
 
   // Refs
@@ -56,15 +55,18 @@ const ClockPage = () => {
   };
 
   // 优化5：预加载并计算单张图片尺寸的通用函数
-  const loadAndComputeImage = useCallback((src: string, key: keyof BgSizes) => {
-    const img = new Image();
-    img.src = src;
-    img.onload = () => {
-      imagesMetaRef.current[key] = img;
-      const size = computeSize(img);
-      setBgSizes(prev => ({ ...prev, [key]: size }));
-    };
-  }, []);
+  const loadAndComputeImage = useCallback(
+    (src: string, key: keyof BgSizes) => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => {
+        imagesMetaRef.current[key] = img;
+        const size = computeSize(img);
+        setBgSizes((prev) => ({ ...prev, [key]: size }));
+      };
+    },
+    [computeSize]
+  );
 
   // 日期更新函数
   const genDateStr = useCallback(() => {
@@ -73,11 +75,11 @@ const ClockPage = () => {
       curDate.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
       })
     );
     setDateTimestamp(curDate.getTime());
-  }, []);
+  }, [setDateStr, setDateTimestamp]);
 
   // --- 逻辑拆分：1. 初始化与全局样式 ---
   useEffect(() => {
@@ -147,7 +149,7 @@ const ClockPage = () => {
   useEffect(() => {
     const handleResize = () => {
       windowMiddleXRef.current = window.innerWidth / 2;
-      
+
       // 优化6：窗口变化时，重新计算两张图的尺寸（如果已加载）
       const newSizes: Partial<BgSizes> = {};
       if (imagesMetaRef.current.church) {
@@ -157,7 +159,7 @@ const ClockPage = () => {
         newSizes.lion = computeSize(imagesMetaRef.current.lion);
       }
       if (Object.keys(newSizes).length > 0) {
-        setBgSizes(prev => ({ ...prev, ...newSizes }));
+        setBgSizes((prev) => ({ ...prev, ...newSizes }));
       }
     };
 
@@ -182,29 +184,28 @@ const ClockPage = () => {
 
     const solar = Solar.fromYmd(year, month, day);
     const lunar = solar.getLunar();
-    
+
     // 获取天干地支年
     const ganZhiYear = lunar.getYearInGanZhi();
     // 获取农历月份
     const lunarMonth = lunar.getMonthInChinese();
     // 获取农历日期
     const lunarDay = lunar.getDayInChinese();
-    
+
     return `${ganZhiYear}年${lunarMonth}月${lunarDay}`;
   }, [dateTimestamp]);
 
   // 优化7：移除了切换时才计算尺寸的 useEffect，因为我们已经预加载好了
 
   return (
-    <div 
-      className={styles.clockPage} 
+    <div
       style={{
         position: 'fixed',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        overflow: 'hidden'
+        overflow: 'hidden',
       }}
     >
       {/* 背景层 1：Church */}
@@ -235,14 +236,23 @@ const ClockPage = () => {
 
       {/* 内容层 */}
       <div className="grid place-items-center h-full w-full relative z-10">
-        <div 
+        <div
           className="px-8 py-4 rounded-3xl
           backdrop-blur-xl bg-white/10
           shadow-xs shadow-black/2
           sm:px-12 sm:py-6"
         >
-          {mousePos === 'left' && <div className="text-4xl sm:text-5xl md:text-6xl font-sans text-black">{dateStr}</div>}
-          {mousePos === 'right' && <div className="text-4xl sm:text-5xl md:text-6xl text-black [writing-mode:vertical-rl]" style={{fontFamily: "'华文行楷', '楷体', 'serif'"}}>{lunarDateStr}</div>}
+          {mousePos === 'left' && (
+            <div className="text-4xl sm:text-5xl md:text-6xl font-sans text-black">{dateStr}</div>
+          )}
+          {mousePos === 'right' && (
+            <div
+              className="text-4xl sm:text-5xl md:text-6xl text-black [writing-mode:vertical-rl]"
+              style={{ fontFamily: "'华文行楷', '楷体', 'serif'" }}
+            >
+              {lunarDateStr}
+            </div>
+          )}
         </div>
       </div>
     </div>
