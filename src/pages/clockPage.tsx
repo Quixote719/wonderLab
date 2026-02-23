@@ -48,11 +48,11 @@ const ClockPage = () => {
   }, [mousePos]);
 
   // 优化4：抽离纯计算逻辑，不依赖 state
-  const computeSize = (img: HTMLImageElement): string => {
+  const computeSize = useCallback((img: HTMLImageElement): string => {
     const imgRatio = img.naturalWidth / img.naturalHeight;
     const windowRatio = window.innerWidth / window.innerHeight;
     return imgRatio > windowRatio ? 'auto 100%' : '100% auto';
-  };
+  }, []);
 
   // 优化5：预加载并计算单张图片尺寸的通用函数
   const loadAndComputeImage = useCallback(
