@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Solar } from 'lunar-javascript';
-import churchImg from '@/assets/church.jpg';
-import lionImg from '@/assets/lion.jpg';
+import churchImg from '@/assets/images/church.jpg';
+import lionImg from '@/assets/images/lion.jpg';
 
 // 常量抽离
 const MOUSE_POS_BUFFER_RATIO = 1 / 5;
@@ -243,12 +243,14 @@ const ClockPage = () => {
           sm:px-12 sm:py-6"
         >
           {mousePos === 'left' && (
-            <div className="text-4xl sm:text-5xl md:text-6xl font-sans text-black">{dateStr}</div>
+            <div className="text-xl sm:text-5xl md:text-7xl font-sans text-black font-light">
+              {dateStr}
+            </div>
           )}
           {mousePos === 'right' && (
             <div
-              className="text-4xl sm:text-5xl md:text-6xl text-black [writing-mode:vertical-rl]"
-              style={{ fontFamily: "'华文行楷', '楷体', 'serif'" }}
+              className="text-4xl sm:text-5xl md:text-7xl text-black [writing-mode:vertical-rl] font-light"
+              style={{ fontFamily: "'华文行楷', 'Kaiti SC', 'STKaiti', 'KaiTi', serif" }}
             >
               {lunarDateStr}
             </div>
