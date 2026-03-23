@@ -1,7 +1,0 @@
-.clockPage {
-  @font-face {
-    font-family: '华文行楷';
-    src: url('https://cdn.jsdelivr.net/gh/yourname/fonts/STXingkai.ttf') format('truetype');
-    /* 网上能找到公开的华文行楷 web 字体链接 */
-  }
-}

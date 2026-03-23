@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Long+Cang&display=swap');
 
 /* index.css（v4 写法，无 @tailwind 指令） */
 /* 直接导入 Tailwind 核心样式（v4 推荐写法） */
@@ -20,17 +21,4 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', 'Montserrat', sans-serif;
-}
-
-@font-face {
-  font-family: '华文行楷'; /* 必须和组件中引用的名称完全一致 */
-  /* 替换为稳定的 CDN 链接（无跨域，国内可访问） */
-  src: url('@/assets/fonts/chinese.stxingkai.ttf') format('truetype');
-  /* 兜底：Web 字体加载失败时，用系统楷体 */
-  fallback: 'Kaiti SC', 'STKaiti', 'KaiTi', serif;
-  /* 字体加载策略：先显示兜底字体，加载完成后替换 */
-  font-display: swap;
-  /* 可选：确保字体样式继承 */
-  font-style: normal;
-  font-weight: 200;
 }

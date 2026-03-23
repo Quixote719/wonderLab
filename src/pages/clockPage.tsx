@@ -250,7 +250,7 @@ const ClockPage = () => {
           {mousePos === 'right' && (
             <div
               className="text-4xl sm:text-5xl md:text-7xl text-black [writing-mode:vertical-rl] font-light"
-              style={{ fontFamily: "'华文行楷', 'Kaiti SC', 'STKaiti', 'KaiTi', serif" }}
+              style={{ fontFamily: "'Long Cang', 'Kaiti SC', 'STKaiti', serif" }}
             >
               {lunarDateStr}
             </div>
