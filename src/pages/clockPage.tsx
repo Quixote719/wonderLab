@@ -243,7 +243,10 @@ const ClockPage = () => {
           sm:px-12 sm:py-6"
         >
           {mousePos === 'left' && (
-            <div className="text-xl sm:text-5xl md:text-7xl font-sans text-black font-light">
+            <div
+              className="text-xl sm:text-5xl md:text-7xl font-sans text-black font-light"
+              style={{ fontFamily: "'Montserrat'" }}
+            >
               {dateStr}
             </div>
           )}
