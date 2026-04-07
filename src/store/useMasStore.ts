@@ -20,7 +20,7 @@ interface MasState {
 
   // 工具调用
   toolCalls: ToolCall[];
-  addToolCall: (toolCall: Omit<ToolCall, 'id' | 'timestamp'>) => void;
+  addToolCall: (toolCall: Omit<ToolCall, 'id' | 'timestamp'>) => string;
   updateToolCallStatus: (id: string, status: ToolCall['status'], output?: string) => void;
 
   // 任务控制
@@ -58,17 +58,19 @@ export const useMasStore = create<MasState>((set, get) => ({
     })),
 
   // 消息操作
-  addMessage: (message) =>
+  addMessage: (message) => {
+    const id = get()._generateId();
     set((state) => ({
       messages: [
         ...state.messages,
         {
           ...message,
-          id: state._generateId(),
+          id,
           timestamp: new Date(),
         },
       ],
-    })),
+    }));
+  },
 
   updateStreamingMessage: (content) =>
     set((state) => {
@@ -91,17 +93,20 @@ export const useMasStore = create<MasState>((set, get) => ({
     })),
 
   // 工具调用操作
-  addToolCall: (toolCall) =>
+  addToolCall: (toolCall) => {
+    const id = get()._generateId();
     set((state) => ({
       toolCalls: [
         ...state.toolCalls,
         {
           ...toolCall,
-          id: state._generateId(),
+          id,
           timestamp: new Date(),
         },
       ],
-    })),
+    }));
+    return id;
+  },
 
   updateToolCallStatus: (id, status, output) =>
     set((state) => ({
@@ -121,7 +126,6 @@ export const useMasStore = create<MasState>((set, get) => ({
       updateAgentStatus,
       addToolCall,
       updateToolCallStatus,
-      _generateId,
     } = get();
 
     // 添加系统消息
@@ -176,7 +180,7 @@ export const useMasStore = create<MasState>((set, get) => ({
         // 模拟工具调用
         setTimeout(() => {
           updateAgentStatus(step.agentId, 'working');
-          addToolCall({
+          const toolCallId = addToolCall({
             agentId: step.agentId!,
             toolName: 'process_task',
             input: `执行 ${step.message}`,
@@ -186,7 +190,6 @@ export const useMasStore = create<MasState>((set, get) => ({
 
           // 更新工具调用状态
           setTimeout(() => {
-            const toolCallId = _generateId();
             updateToolCallStatus(toolCallId, 'success', '任务处理完成');
           }, 1000);
         }, 500);

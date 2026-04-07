@@ -64,6 +64,8 @@ export const WorkflowCanvas = () => {
       y: nodes.findIndex((node) => node.id === n.id) * 120 + 50,
     },
     data: { label: n.label, status: n.status, type: n.type },
+    width: 120,
+    height: 40,
   }));
 
   const reactFlowEdges: Edge[] = edges.map((e: WorkflowEdge) => ({
@@ -85,7 +87,20 @@ export const WorkflowCanvas = () => {
       >
         <Background />
         <Controls />
-        <MiniMap />
+        <MiniMap
+          nodeColor={(node) => {
+            switch ((node.data as WorkflowNode).status) {
+              case 'active':
+                return '#3b82f6';
+              case 'completed':
+                return '#22c55e';
+              case 'error':
+                return '#ef4444';
+              default:
+                return '#d1d5db';
+            }
+          }}
+        />
       </ReactFlow>
     </div>
   );
